@@ -10,13 +10,6 @@ namespace LoadTest
 {
     class Program
     {
-        static Random rnd = new Random();
-
-        const string RandomKey = "-r";
-        const string GzipKey = "-gzip";
-
-        static Dictionary<string, string> options = new Dictionary<string, string>();
-
         static int Main(string[] args)
         {
             // parse main parameters - processes, test duration, url
@@ -24,11 +17,11 @@ namespace LoadTest
             int duration = 10;
             string url = string.Empty;
             if (args.Length < 3)
-                return Usage();
+                return PrintUsage();
             if (!int.TryParse(args[0], out processes))
-                return Usage(); 
+                return PrintUsage(); 
             if (!int.TryParse(args[1], out duration))
-                return Usage();
+                return PrintUsage();
             url = args[2];
             
             // parse options
@@ -46,6 +39,7 @@ namespace LoadTest
             
             Console.WriteLine(string.Format("Url: {0}\nThreads: {1}\nExitTime: {2}", url, processes, ExitTime));
 
+            // running child processes to execute requests in parallel
             List<Process> children = new List<Process>();
             for (int i = 1; i < processes; i++)
             {
@@ -53,40 +47,42 @@ namespace LoadTest
                 children.Add(System.Diagnostics.Process.Start("LoadTest.exe", parameters));
             }
 
-            Worker(workerParam);
-
+            // do actual work
+            ExecuteRequests(workerParam);
            
-            int avarageRequest = (int)(totalContent / number);
-
+            int avarageRequestSize = (int)(totalContent / number);
             int totalNumber = number;
+
+            // collect number of operations from child processes with exit codes
             foreach (var processInstance in children)
             {
                 while (!processInstance.HasExited)
                     Thread.Sleep(100);
                 totalNumber += processInstance.ExitCode;
             }
+
             Console.WriteLine("");
             Console.WriteLine(string.Format("{0} operations total, {1} operations per second {2} Kb Each, {3} Kbps; ~{4}% Errors ", 
                 totalNumber, 
                 totalNumber / duration, 
-                avarageRequest / 1024,
-                (totalNumber / duration) * avarageRequest * 8 / 1024,
-                errors * 100 / number));
+                avarageRequestSize / 1024,
+                (totalNumber / duration) * avarageRequestSize * 8 / 1024,
+                errors * 100 / number)); // errors are not collected from child processes yet, so this number is very rough
+
             return totalNumber;
         }
 
-        public static int Usage()
+        public static int PrintUsage()
         {
-            Console.WriteLine(string.Format("Usage: LoadTest.exe Number Duration url [options]{0}" +
-                "Options: [-r] randomize url adding random int to end {0}" + 
-                "         [-gzip] adds Accept-encoding: gzip (takes CPU but improve bandwidth usage)", 
-                Environment.NewLine));
+            Console.WriteLine(string.Format("Usage: LoadTest.exe Parallelism Duration Url [options]{0}" +
+                "Options: [{1}] randomize url adding random int to end {0}" + 
+                "         [{2}] adds Accept-encoding: gzip (takes CPU but improve bandwidth usage)", 
+                Environment.NewLine, RandomKey, GzipKey));
             return -1;
         }
 
-        public static void Worker(object parameter)
+        public static void ExecuteRequests(WorkerParam context)
         {
-            WorkerParam context = (WorkerParam)parameter;
             Stopwatch start = new Stopwatch();
             start.Start();
             long lastElapsed = 0;
@@ -96,7 +92,7 @@ namespace LoadTest
                 if (start.ElapsedMilliseconds > lastElapsed + 100)
                 {
                     lastElapsed = start.ElapsedMilliseconds;
-                    printProgress();
+                    PrintProgress();
                 }
 
                 var request = (HttpWebRequest)WebRequest.Create(UrlToCall(context));
@@ -132,10 +128,16 @@ namespace LoadTest
             }
         }
 
+        static Random rnd = new Random();
+
+        const string RandomKey = "-r";
+        const string GzipKey = "-gzip";
+
+        static Dictionary<string, string> options = new Dictionary<string, string>();
 
         private static int lastNumber = 0;
         private static char[] visualization = " 123456789ABCDEF*".ToCharArray();
-        private static void printProgress()
+        private static void PrintProgress()
         {
             int newNumber = number;
             int delta = newNumber - lastNumber;
