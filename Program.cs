@@ -6,7 +6,7 @@ using System.Threading;
 using System.Net;
 using System.Diagnostics;
 
-namespace LoadTest
+namespace SocialTalents.WebPerf.LoadTest
 {
     class Program
     {
@@ -103,19 +103,15 @@ namespace LoadTest
                 {
                     request.Headers.Add("Accept-Encoding", "gzip,deflate");
                 }
-    
+
+                HttpWebResponse response = null;
                 try
                 {
-                    using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
-                    {
-                        if (response.StatusCode == HttpStatusCode.OK)
-                        {
-                            totalContent += response.ContentLength;           
-                        }
-                        else
-                            errors++;
-                        response.Close();  
-                    }
+                    response = (HttpWebResponse)request.GetResponse();
+                    if (response.StatusCode == HttpStatusCode.OK)
+                        totalContent += response.ContentLength;
+                    else
+                        errors++;
                 }
                 catch
                 {
@@ -123,6 +119,8 @@ namespace LoadTest
                 }
                 finally
                 {
+                    if (response != null)
+                        response.Close();
                     number++;
                 }
             }
