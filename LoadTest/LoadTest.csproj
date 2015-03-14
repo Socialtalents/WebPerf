@@ -8,7 +8,7 @@
     <ProjectGuid>{C95328E1-1C85-4875-9CBA-13447EABAD40}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>LoadTest</RootNamespace>
+    <RootNamespace>SocialTalents.WebPerf.LoadTest</RootNamespace>
     <AssemblyName>LoadTest</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
@@ -89,7 +89,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>"C:\Program Files\WinRAR\winrar" a -afzip ..\..\Downloads\LoadTest.zip .\*</PostBuildEvent>
+    <PostBuildEvent>"C:\Program Files\WinRAR\winrar" a -afzip ..\..\..\Downloads\LoadTest.zip .\*</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
