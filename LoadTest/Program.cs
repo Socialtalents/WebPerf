@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Net;
 using System.Diagnostics;
+using System.IO;
 
 namespace SocialTalents.WebPerf.LoadTest
 {
@@ -69,6 +70,11 @@ namespace SocialTalents.WebPerf.LoadTest
                 (totalNumber / duration) * avarageRequestSize * 8 / 1024,
                 errors * 100 / number)); // errors are not collected from child processes yet, so this number is very rough
 
+            if (lastError != null)
+            {
+                Console.WriteLine(string.Format("!!! At least {0} http errors registered. Last error was:", errors));
+                Console.WriteLine(lastError);
+            }
             return totalNumber;
         }
 
@@ -80,6 +86,8 @@ namespace SocialTalents.WebPerf.LoadTest
                 Environment.NewLine, RandomKey, GzipKey));
             return -1;
         }
+
+        private static string lastError = null;
 
         public static void ExecuteRequests(WorkerParam context)
         {
@@ -96,6 +104,9 @@ namespace SocialTalents.WebPerf.LoadTest
                 }
 
                 var request = (HttpWebRequest)WebRequest.Create(UrlToCall(context));
+                request.CookieContainer = new CookieContainer();
+                request.AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.GZip;
+                request.AllowAutoRedirect = true;
                 request.Method = WebRequestMethods.Http.Get;
                 request.KeepAlive = true;
                 request.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
@@ -111,10 +122,16 @@ namespace SocialTalents.WebPerf.LoadTest
                     if (response.StatusCode == HttpStatusCode.OK)
                         totalContent += response.ContentLength;
                     else
+                    {
+                        var objStream = response.GetResponseStream();
+                        var objSR = new StreamReader(objStream, Encoding.UTF8, true);
+                        lastError = objSR.ReadToEnd();
                         errors++;
+                    }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    lastError = ex.Message;
                     errors++;
                 }
                 finally
