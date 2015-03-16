@@ -48,6 +48,9 @@ namespace SocialTalents.WebPerf.LoadTest
                 children.Add(System.Diagnostics.Process.Start("LoadTest.exe", parameters));
             }
 
+            ServicePointManager.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback(delegate { return true; });
+
+
             // do actual work
             ExecuteRequests(workerParam);
            
